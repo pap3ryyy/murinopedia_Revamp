@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<link rel="icon" type="image/png" href="asset/logo.ico">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Транслятор Знанья — Муринопедия</title>
+    <link rel="stylesheet" href="murinopedia.css">
+    <style>
+        .translator-engine { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: start; margin-top: 20px; }
+        .lang-panel { border: 1px solid var(--color-border-md); border-radius: var(--radius); overflow: hidden; }
+        .lang-header { background: var(--color-surface); padding: 10px 14px; border-bottom: 1px solid var(--color-border-md); font-weight: 700; font-size: 0.8em; text-transform: uppercase; letter-spacing: 1px; color: var(--color-faint); }
+        textarea { width: 100%; height: 260px; padding: 16px; border: none; font-size: 16px; box-sizing: border-box; resize: none; outline: none; font-family: inherit; color: var(--color-text); background: var(--color-bg); }
+        .output-box { height: 260px; padding: 16px; font-size: 16px; background: var(--color-surface); color: var(--color-text); overflow-y: auto; white-space: pre-wrap; }
+        .swap-btn { background: var(--color-surface); border: 1px solid var(--color-border-md); border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-top: 110px; font-size: 1.1em; transition: transform 0.2s; flex-shrink: 0; }
+        .swap-btn:hover { transform: rotate(180deg); background: var(--color-border); }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo-area">
+        <img src="asset/logo.png" alt="М.С.В." class="logo-img">
+        <a href="index.html" class="logo-text">Муринопедия</a>
+    </div>
+    <div class="status-bar">
+        Оперативная обстановка:
+        <span class="status-dot ok"></span>
+        <span class="status-label ok">СТАБИЛЬНАЯ</span>
+    </div>
+</header>
+
+<div class="container full">
+    <main>
+        <h1>Транслятор Знанья 2.0</h1>
+        <p class="muted">Переводи между Русским ич Муринскч вч реальном времени.</p>
+
+        <div class="translator-engine">
+            <div class="lang-panel">
+                <div id="leftLangName" class="lang-header">Русский</div>
+                <textarea id="sourceText" placeholder="Введи текст..."></textarea>
+            </div>
+            <button class="swap-btn" onclick="swapLanguages()" title="Сменить язык">⇄</button>
+            <div class="lang-panel">
+                <div id="rightLangName" class="lang-header">Муринскч</div>
+                <div id="targetText" class="output-box"></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<footer>
+    Материал вч Муринопедии. 2026 год.<br>
+    Любая помощьч дляч архива естч полезнл. Искажение Муринскч преследуется через М.С.В.
+</footer>
+
+<script>
+    const dictionary = {
+        "я": "ч", "мы": "мыч", "он": "ог", "она": "онч", "оно": "онт", "ты": "тв", "вы": "выч",
+        "где": "гле", "почему": "поч", "ладно": "ладн", "нет": "нрт", "да": "естч",
+        "привет": "привит", "пока": "пок", "спасибо": "дяк",
+        "батя": "батч", "папа": "батч", "мама": "матч", "мать": "матч",
+        "сын": "сыр", "сыновья": "сыры", "сыны": "сыры",
+        "жена": "жинка", "жены": "жинки",
+        "друг": "друн", "друзья": "друны", "друзьями": "друнами",
+        "дом": "дон", "дома": "доны", "домой": "доной",
+        "свет": "светл", "работа": "робол", "день": "деность",
+        "трамвай": "трамвайч", "паук": "паукость",
+        "войска": "войскч", "победа": "победл", "смерть": "смертч"
+    };
+
+    const reverseDictionary = {};
+    for (let key in dictionary) { reverseDictionary[dictionary[key]] = key; }
+
+    let isRussianToMurin = true;
+
+    function translate() {
+        const source = document.getElementById('sourceText').value;
+        if (!source.trim()) { document.getElementById('targetText').innerText = ""; return; }
+
+        const parts = source.split(/(\s+|[,.!?])/);
+        const translated = parts.map(part => {
+            if (/^\s+$/.test(part) || /[,.!?]/.test(part)) return part;
+            let clean = part.toLowerCase().trim();
+
+            if (isRussianToMurin) {
+                if (dictionary[clean]) return applyCase(part, dictionary[clean]);
+                if (clean.startsWith("мытищ")) return applyCase(part, "мытищи");
+                if (clean === "мыти" || clean === "мытей" || clean === "мытями") return applyCase(part, "мыти");
+                if (clean.startsWith("друг") || clean.startsWith("друз")) {
+                    if (clean.includes("ами")) return applyCase(part, "друнами");
+                    return applyCase(part, clean.endsWith("ья") || clean.endsWith("и") ? "друны" : "друн");
+                }
+                if (clean.startsWith("безопасн")) return applyCase(part, "безопаснол");
+                if (clean.startsWith("чист") && clean.length > 5) return applyCase(part, "чистость");
+                if (clean.startsWith("тазик") || clean.startsWith("ванн")) return applyCase(part, "тазикостью");
+                if (clean.length <= 3) return part;
+                if (clean.length > 9) return applyCase(part, clean.substring(0, 6) + "л");
+                let base = clean.replace(/[аеиоуюяьыи]$/, '');
+                return applyCase(part, base + "ость");
+            } else {
+                if (reverseDictionary[clean]) return applyCase(part, reverseDictionary[clean]);
+                if (clean === "мытищи") return applyCase(part, "мытищи");
+                if (clean === "мыти") return applyCase(part, "мыти");
+                if (clean.endsWith("ость")) return applyCase(part, clean.replace("ость", ""));
+                if (clean.endsWith("л") && clean.length > 5) return applyCase(part, clean.substring(0, clean.length - 1));
+                return part;
+            }
+        });
+        document.getElementById('targetText').innerText = translated.join('');
+    }
+
+    function swapLanguages() {
+        const currentOutput = document.getElementById('targetText').innerText;
+        isRussianToMurin = !isRussianToMurin;
+        document.getElementById('leftLangName').innerText = isRussianToMurin ? "Русский" : "Муринскч";
+        document.getElementById('rightLangName').innerText = isRussianToMurin ? "Муринскч" : "Русский";
+        if (currentOutput) document.getElementById('sourceText').value = currentOutput;
+        translate();
+    }
+
+    document.getElementById('sourceText').addEventListener('input', translate);
+
+    function applyCase(original, translated) {
+        if (original[0] === original[0].toUpperCase()) {
+            return translated.charAt(0).toUpperCase() + translated.slice(1);
+        }
+        return translated;
+    }
+</script>
+</body>
+</html>
